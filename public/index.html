@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindGraph - AI 原生个人知识管理</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <!-- 加载画面 -->
+  <div id="loading">
+    <div class="loading-spinner"></div>
+    <p>🧠 MindGraph 加载中…</p>
+  </div>
+
+  <!-- 主应用 -->
+  <div id="app" style="display:none">
+    <!-- 顶栏 -->
+    <header id="topbar">
+      <div class="brand">
+        <span class="logo">🧠</span>
+        <span class="title">MindGraph</span>
+        <span class="brand-tagline">AI 原生 · 零配置</span>
+      </div>
+      <div class="topbar-actions">
+        <button id="btn-new-note" title="新建笔记 (Ctrl+N)">📝 新建笔记</button>
+        <button id="btn-daily-note" title="今日日记">📅 今日日记</button>
+        <button id="btn-graph-view" title="知识图谱">🕸️ 知识图谱</button>
+        <button id="btn-toggle-theme" title="切换主题">🌓</button>
+        <span id="stats-badge" class="stats-badge"></span>
+      </div>
+    </header>
+
+    <!-- 主布局 -->
+    <div id="main-layout">
+      <!-- 左侧栏 -->
+      <aside id="sidebar-left">
+        <div class="sidebar-section">
+          <div class="search-box">
+            <input type="text" id="search-input" placeholder="🔍 搜索笔记…" autocomplete="off">
+            <div id="search-results" class="search-dropdown" style="display:none"></div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-header">
+            <span>📋 全部笔记</span>
+            <span id="note-count" class="count-badge">0</span>
+          </div>
+          <div id="notes-list" class="notes-list"></div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-header">
+            <span>🏷️ 标签</span>
+          </div>
+          <div id="tags-list" class="tags-list"></div>
+        </div>
+      </aside>
+
+      <!-- 中间：编辑器 -->
+      <main id="editor-area">
+        <div id="editor-empty" class="editor-empty">
+          <div class="empty-state">
+            <div class="empty-icon">🧠</div>
+            <h2>欢迎使用 MindGraph</h2>
+            <p class="empty-tagline">AI 原生的个人知识管理系统 · 零配置 · 开箱即用</p>
+            <div class="empty-actions">
+              <button class="btn-primary" onclick="document.getElementById('btn-new-note').click()">
+                📝 创建第一篇笔记
+              </button>
+              <button class="btn-secondary" onclick="document.getElementById('btn-daily-note').click()">
+                📅 打开今日日记
+              </button>
+            </div>
+            <div class="empty-features">
+              <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <div class="feature-text">
+                  <strong>AI 智能助手</strong>
+                  <span>自动推荐标签、生成摘要、给出改进建议</span>
+                </div>
+              </div>
+              <div class="feature-card">
+                <div class="feature-icon">🔗</div>
+                <div class="feature-text">
+                  <strong>双向链接</strong>
+                  <span>用 [[笔记标题]] 连接你的知识</span>
+                </div>
+              </div>
+              <div class="feature-card">
+                <div class="feature-icon">🕸️</div>
+                <div class="feature-text">
+                  <strong>知识图谱</strong>
+                  <span>可视化你的思维网络</span>
+                </div>
+              </div>
+              <div class="feature-card">
+                <div class="feature-icon">🖼️</div>
+                <div class="feature-text">
+                  <strong>图片粘贴</strong>
+                  <span>Ctrl+V 直接插入图片到笔记</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="editor-active" style="display:none">
+          <div class="editor-toolbar">
+            <input type="text" id="note-title-input" placeholder="笔记标题…" class="note-title-input">
+            <div class="editor-actions">
+              <button id="btn-ai-tags" class="btn-ai" title="AI 智能推荐标签">🤖🏷️ 推荐标签</button>
+              <button id="btn-ai-summarize" class="btn-ai" title="AI 生成摘要">🤖📝 生成摘要</button>
+              <button id="btn-ai-enhance" class="btn-ai" title="AI 改进建议">🤖💡 改进建议</button>
+              <button id="btn-save" class="btn-save" title="保存 (Ctrl+S)">💾 保存</button>
+              <button id="btn-export" title="导出为 Markdown">📥 导出</button>
+              <button id="btn-delete-note" class="btn-danger" title="删除笔记">🗑️</button>
+            </div>
+          </div>
+          <div class="editor-container">
+            <div class="editor-pane" id="editor-pane">
+              <div class="pane-header">✏️ 编辑</div>
+              <textarea id="note-content-input" placeholder="用 Markdown 书写你的想法…
+
+用 [[笔记标题]] 链接其他笔记
+用 #标签 分类整理
+Ctrl+V 粘贴图片"></textarea>
+            </div>
+            <div class="preview-pane" id="preview-pane">
+              <div class="pane-header">👁️ 预览</div>
+              <div id="preview-content" class="preview-content"></div>
+            </div>
+          </div>
+          <div class="status-bar">
+            <span id="save-status">就绪</span>
+          </div>
+        </div>
+      </main>
+
+      <!-- 右侧栏 -->
+      <aside id="sidebar-right">
+        <div class="sidebar-section" id="backlinks-section" style="display:none">
+          <div class="section-header">📎 反向链接</div>
+          <div id="backlinks-list" class="links-list"></div>
+        </div>
+
+        <div class="sidebar-section" id="outgoing-section" style="display:none">
+          <div class="section-header">🔗 链接到的笔记</div>
+          <div id="outgoing-list" class="links-list"></div>
+        </div>
+
+        <div class="sidebar-section" id="note-tags-section" style="display:none">
+          <div class="section-header">🏷️ 标签</div>
+          <div id="note-tags-list" class="tags-list"></div>
+        </div>
+
+        <div class="sidebar-section" id="note-info-section" style="display:none">
+          <div class="section-header">ℹ️ 信息</div>
+          <div id="note-info" class="note-info"></div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 知识图谱弹窗 -->
+    <div id="graph-modal" class="modal" style="display:none">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content graph-modal-content">
+        <div class="modal-header">
+          <h2>🕸️ 知识图谱</h2>
+          <div class="graph-controls">
+            <button id="btn-graph-refresh">🔄 刷新</button>
+            <button id="btn-graph-fit">🔲 适应窗口</button>
+            <span class="graph-info" id="graph-info"></span>
+          </div>
+          <button id="btn-close-graph" class="btn-close">✕</button>
+        </div>
+        <div id="graph-container"></div>
+        <div id="graph-tooltip" class="graph-tooltip" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- 提示消息 -->
+    <div id="toast" class="toast" style="display:none"></div>
+  </div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
